@@ -48,7 +48,6 @@ class SoletraSolver:
  
     # Return a list of all possible words, according to the dictionary, given the number os characters
     def FindCombinations(self, numChars) -> list:
-        print('Obtendo lista de palavras possiveis...')
 
         letters = self.__centralLetters + self.__sideLetters
 
@@ -61,19 +60,26 @@ class SoletraSolver:
         # 1- Contains the central letter
         # 2- Word exists on dictionary (spell())
         combFiltered = []
-        for combination in combinationsIter:
-            combStr = ''.join(combination)
-            self.__Log('Combination str: ' + combStr)
-            for centralCh in self.__centralLetters:
-                if (centralCh in combStr) and (self.__hunspellHandler.spell(combStr)):
-                    combFiltered.append(combStr)
+        try:
+            for combination in combinationsIter:
+                combStr = ''.join(combination)
+                self.__Log('Combination str: ' + combStr)
+                for centralCh in self.__centralLetters:
+                    if (centralCh in combStr) and (self.__hunspellHandler.spell(combStr)):
+                        combFiltered.append(combStr)
+        except KeyboardInterrupt:
+            print()
+            print('-> Programa interrompido antes do fim da análise!!')
         self.__Log('depois da iteracao')
-        
+
+        print()
+        print('Palavras encontradas:')
+        print(combFiltered)
+        print()
+
         # Strip accents from the word, then remove repeated words ('para', 'pará'), then put in alphabetic order
         filtered2 = [self.__StripAccents(word) for word in combFiltered]
         tryLst = sorted(set(filtered2))
-
-        print('...Finalizado!')
         return tryLst
 
 
