@@ -21,8 +21,8 @@ if __name__ == "__main__":
         if not num.isnumeric():
             op = False
         else:
+            print("Obtendo lista de palavras possíveis...")
             palavras = solver.FindCombinations(int(num))
-            print(palavras)
             resp = input('Analise finalizada! Iniciar preenchimento? -> ')
             if resp.lower() == 's':
                 time.sleep(5)
