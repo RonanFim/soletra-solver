@@ -1,10 +1,11 @@
 from SoletraSolver import SoletraSolver
 import time
+import os
 
 # Main
 if __name__ == "__main__":
 
-    solver = SoletraSolver('pt_BR', 'C:\AreaTransf\soletraSolver')
+    solver = SoletraSolver('pt_BR', os.getcwd()+'\dictionaries')
 
     # Obtem letras centrais
     centrais = input('Letras Centrais: ')
