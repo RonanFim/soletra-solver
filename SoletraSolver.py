@@ -49,9 +49,10 @@ class SoletraSolver:
         return self.__sideLetters
 
  
-    # Return a list of all possible words, according to the dictionary, given the number os characters
     def FindCombinations(self, numChars) -> list:
-
+        """
+        Return a list of all possible words, according to the dictionary, given the number os characters
+        """
         letters = self.__centralLetters + self.__sideLetters
 
         # Find all possible combinations of letters
@@ -86,32 +87,63 @@ class SoletraSolver:
         tryLst = sorted(set(filtered2))
         return tryLst
 
-
     # Like FindCombinations(), but multiprocessing
     def FindCombinationsMP(self, numChars) -> list:
-
+        """
+        Return a list of all possible words, according to the dictionary, given the number os characters
+        Divide the word in half, fixing the letter in the middle, which must be one of the letters of the game
+        E.g.: a word of 7 letters can be expressed as:
+            ---x---
+        , where x is one of the game letters (central or side).
+        The algorithm will generate combinations of 3 letters only (fast to compute) and then test all
+        possible combination, using the middle letter. It will be created one independent process to each middle letter.
+        For exemple, with this configuration:
+            central letter: a
+            side letters:   b, c
+            number of characters: 5
+        The algorithm will do:
+        --x-- : combinations of 2 letters: [aa, ab, ac, ba, bb, bc, ca, cb, cc]
+        Process 1:
+        middle letter: a
+        aaaaa, aaaab, aaaac, aaaba, aaabb, ......,  ccacc
+        Process 2:
+        middle letter: b
+        aabaa, aabab, aabac, aabba, aabbb, ......,  ccbcc
+        Process 3:
+        middle letter: c
+        aacaa, aacab, aacac, aacba, aacbb, ......,  ccccc
+        If the number of chars is even, the word will be divided like that:
+        ----x-----
+        """
         letters = self.__centralLetters + self.__sideLetters
 
-        if (numChars % 2) == 0:  # Par
-            centrals = [''.join(item) for item in list(itertools.product(letters, repeat=2))]
+        if (numChars % 2) == 0:  # Even
             self.__Log('antes do comb...')
             combinationsList = [''.join(item) for item in list(itertools.product(letters, repeat=(numChars-2)//2))]
+            combinationsList2 = [''.join(item) for item in list(itertools.product(letters, repeat=numChars//2))]
             self.__Log('...depois do comb')            
-        else:   # Impar
-            centrals = letters.copy()
+        else:   # Odd
             # Find all possible combinations of letters
             self.__Log('antes do comb...')
             combinationsList = [''.join(item) for item in list(itertools.product(letters, repeat=numChars//2))]
+            combinationsList2 = combinationsList
             self.__Log('...depois do comb')
 
         sharedQueue = mp.Queue()
-        processes = [mp.Process(target=MultiprocessRun, args=(combinationsList, self.__centralLetters, lett, self.__dictName, self.__dictPath, sharedQueue)) for lett in centrals]
+        processes = [mp.Process(target=MultiprocessRun, args=(combinationsList, combinationsList2, self.__centralLetters, lett, self.__dictName, self.__dictPath, sharedQueue)) for lett in letters]
         for proc in processes:
-            print("inicia processo...")
+            self.__Log("inicia processo...")
             proc.start()
-        for proc in processes:
-            proc.join()
-            print("...encerrou processo")
+        try:
+            for proc in processes:
+                proc.join()
+                proc.close()
+                self.__Log("...encerrou processo")
+        except KeyboardInterrupt:
+            for proc in processes:
+                proc.kill()
+            print()
+            print('-> Programa interrompido antes do fim da análise!!')
         
         combFiltered = [sharedQueue.get() for x in range(sharedQueue.qsize())]
         print()
@@ -167,12 +199,12 @@ class SoletraSolver:
 
 
 # Multiprocess function
-def MultiprocessRun(combLst, centralLetters, central, dictName, dictPath, queue):
+def MultiprocessRun(combLst, combLst2, centralLetters, central, dictName, dictPath, queue):
     hs = Hunspell(dictName, hunspell_data_dir=dictPath)
     for item in combLst:
-        for item2 in combLst:
+        for item2 in combLst2:
             combStr = item + central + item2
             for centralCh in centralLetters:
                 if (centralCh in combStr) and (hs.spell(combStr)):
-                    print(combStr)
+                    # print(combStr)
                     queue.put(combStr)
