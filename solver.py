@@ -22,7 +22,16 @@ if __name__ == "__main__":
             op = False
         else:
             print("Obtendo lista de palavras possíveis...")
-            palavras = solver.FindCombinations(int(num))
+            if int(num) < 7:
+                t1 = time.time()
+                palavras = solver.FindCombinations(int(num))    # Para palavras de até 6 letras, utilizar método tradicional
+                t2 = time.time()
+                print("Tempo de execucao: " + str(t2-t1) + " s")
+            else:
+                t1 = time.time()
+                palavras = solver.FindCombinationsMP(int(num))  # Para palavras de 7 letras ou mais, usar multiprocessing
+                t2 = time.time()
+                print("Tempo de execucao: " + str(t2-t1) + " s")
             resp = input('Analise finalizada! Iniciar preenchimento? -> ')
             if resp.lower() == 's':
                 time.sleep(5)
