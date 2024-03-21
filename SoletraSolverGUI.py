@@ -7,6 +7,8 @@ WIDTH = 625
 HEIGHT = 300
 TITLE = "Soletra Solver"
 BGCOLOR = "#79b7c7"
+SINGLE = 1
+MULTI = 2
 
 
 class SoletraSolverGUI:
@@ -25,6 +27,7 @@ class SoletraSolverGUI:
         self.__root.maxsize(WIDTH, HEIGHT)
         self.__root.title(TITLE)
         self.__DEBUG = debug
+        self.__solver = None
         self.__CreateElements()
         self.__ConfigGrids()
         self.__Customize()
@@ -63,8 +66,8 @@ class SoletraSolverGUI:
 
     def __CreateRadioButtons(self) -> None:
         self.__rbOption = IntVar()
-        self.__rbSingleProc = Radiobutton(self.__fSelAlgor, text= "Single Process", variable=self.__rbOption, value=1)
-        self.__rbMultiProc  = Radiobutton(self.__fSelAlgor, text= "Multi Process", variable=self.__rbOption, value=2)
+        self.__rbSingleProc = Radiobutton(self.__fSelAlgor, text= "Single Process", variable=self.__rbOption, value=SINGLE)
+        self.__rbMultiProc  = Radiobutton(self.__fSelAlgor, text= "Multi Process", variable=self.__rbOption, value=MULTI)
 
     def __CreateElements(self) -> None:
         self.__CreateFrames()
@@ -157,6 +160,20 @@ class SoletraSolverGUI:
         self.__ChangeFont(self.__root)
         self.__bDictFile.configure(font=("Verdana", 9))
         self.__lMessages.configure(foreground="White")
+
+    def __CreateSolverFromPath(self, filepath: str) -> None:
+        fileSplit = filepath.split('/')
+        print(fileSplit)
+        filename = fileSplit[-1].split('.')[0]
+        print(filename)
+        path = ''.join(str(item)+'\\' for item in fileSplit[:-1])
+        print(path)
+        self.__solver = SoletraSolver(filename, path)
+    
+    def __FillBoxWithList(self, wordsList: list) -> None:
+        self.__tFinalWords.delete(1.0, "end-1c")
+        for word in wordsList:
+            self.__tFinalWords.insert(END, word + '\n')
     
 
     # =========== CallBack Functions ===========
@@ -173,18 +190,38 @@ class SoletraSolverGUI:
                 filetypes=filetypes
             )
             print(filepath)
-            fileSplit = filepath.split('/')
-            print(fileSplit)
-            filename = fileSplit[-1].split('.')[0]
-            print(filename)
-            path = ''.join(str(item)+'\\' for item in fileSplit[:-1])
-            print(path)
-            self.__solver = SoletraSolver(filename, path)
+            self.__tDictFile.delete(1.0, "end-1c")
+            self.__tDictFile.insert(INSERT, filepath)
+            
 
     def __StartButtonFunc(self):
-        # centralLet = getattr(self.__tCentral, text)
-        # print(centralLet)
-        pass
+        path = self.__tDictFile.get(1.0, "end-1c")
+        print(path)
+        self.__CreateSolverFromPath(path)
+        if self.__solver == None:
+            print("nao tem solver!")
+            return
+        option = self.__rbOption.get()
+        if option not in [SINGLE, MULTI]:
+            print("Algoritmo não selecionado!")
+            return
+        centralLet = self.__tCentral.get(1.0, "end-1c")
+        auxLet = self.__tAux.get(1.0, "end-1c")
+        try:
+            numChars = int(self.__tNumChars.get(1.0, "end-1c"))
+            print(numChars)
+        except ValueError:
+            print("Número de Caracteres incorreto!")
+            return
+        if numChars < 3:
+            print("Número de Caracteres menor que 3")
+            return
+        self.__solver.SetCentralLetters(centralLet)
+        self.__solver.SetSideLetters(auxLet)
+        if option == SINGLE:
+            wordsFound = self.__solver.FindCombinations(numChars)
+            print(wordsFound)
+            self.__FillBoxWithList(wordsFound)
 
     def __StopButtonFunc(self):
         pass
