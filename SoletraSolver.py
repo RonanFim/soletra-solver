@@ -61,7 +61,10 @@ class SoletraSolver:
         # 1- Contains the central letter
         # 2- Word exists on dictionary (spell())
         combFiltered = []
-        hs = Hunspell(self.__dictName, hunspell_data_dir=self.__dictPath)
+        try:
+            hs = Hunspell(self.__dictName, hunspell_data_dir=self.__dictPath)
+        except:
+            raise FileExistsError
         try:
             for combination in combinationsIter:
                 combStr = ''.join(combination)

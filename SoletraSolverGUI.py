@@ -165,11 +165,8 @@ class SoletraSolverGUI:
 
     def __CreateSolverFromPath(self, filepath: str) -> None:
         fileSplit = filepath.split('/')
-        print(fileSplit)
         filename = fileSplit[-1].split('.')[0]
-        print(filename)
         path = ''.join(str(item)+'\\' for item in fileSplit[:-1])
-        print(path)
         self.__solver = SoletraSolver(filename, path)
     
     def __FillBoxWithList(self, wordsList: list) -> None:
@@ -202,41 +199,55 @@ class SoletraSolverGUI:
                 initialdir='/',
                 filetypes=filetypes
             )
-            print(filepath)
             self.__tDictFile.delete(1.0, END)
             self.__tDictFile.insert(INSERT, filepath)
             
 
     def __StartButtonFunc(self):
+
         path = self.__tDictFile.get(1.0, END)
-        print(path)
         self.__CreateSolverFromPath(path)
         if self.__solver == None:
-            print("nao tem solver!")
+            self.__SetStatusMsg("Status: Arquivo de dicionário incorreto! [*.dic e *.aff]", "Red")
             return
+        
         option = self.__rbOption.get()
         if option not in [SINGLE, MULTI]:
-            print("Algoritmo não selecionado!")
+            self.__SetStatusMsg("Status: Algoritmo não selecionado!", "Red")
             return
+        
         centralLet = self.__tCentral.get(1.0, END)
+        self.__solver.SetCentralLetters(centralLet)
+        if len(self.__solver.GetCentralLetters()) <= 0:
+            self.__SetStatusMsg("Status: Letras centrais não informadas!", "Red")
+            return
+        
         auxLet = self.__tAux.get(1.0, END)
+        self.__solver.SetSideLetters(auxLet)
+        if len(self.__solver.GetSideLetters()) <= 0:
+            self.__SetStatusMsg("Status: Letras auxiliares não informadas!", "Red")
+            return
+        
         try:
             numChars = int(self.__tNumChars.get(1.0, END))
-            print(numChars)
         except ValueError:
-            print("Número de Caracteres incorreto!")
+            self.__SetStatusMsg("Status: Número de Caracteres incorreto!", "Red")
             return
         if numChars < 3:
-            print("Número de Caracteres menor que 3")
+            self.__SetStatusMsg("Status: Número de Caracteres deve ser maior que 3", "Red")
             return
+        
         self.__SetStatusMsg("Status: Encontrando palavras...", "Yellow")
-        self.__solver.SetCentralLetters(centralLet)
-        self.__solver.SetSideLetters(auxLet)
         wordsFound = []
-        if option == SINGLE:
-            wordsFound = self.__solver.FindCombinations(numChars)
-        elif option == MULTI:
-            wordsFound = self.__solver.FindCombinationsMP(numChars)
+        try:
+            if option == SINGLE:
+                wordsFound = self.__solver.FindCombinations(numChars)
+            elif option == MULTI:
+                wordsFound = self.__solver.FindCombinationsMP(numChars)
+        except FileExistsError:
+            self.__SetStatusMsg("Status: Arquivo de dicionário incorreto! [*.dic e *.aff]", "Red")
+            return
+        
         self.__FillBoxWithList(wordsFound)
         self.__SetStatusMsg("Status: Finalizado!", "Green")
 
