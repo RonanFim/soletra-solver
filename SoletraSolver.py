@@ -3,7 +3,6 @@ from hunspell import Hunspell
 from unidecode import unidecode
 import time
 import multiprocessing as mp
-from pynput.keyboard import Key, Controller
 
 
 class SoletraSolver:
@@ -14,7 +13,6 @@ class SoletraSolver:
     __centralLetters = None
     __sideLetters = None
     __DEBUG = False
-    __keyboardController = None
 
 
 
@@ -23,7 +21,6 @@ class SoletraSolver:
         self.__dictName = dictName
         self.__dictPath = dictPath
         self.__DEBUG = debug
-        self.__keyboardController = Controller()
 
 
 
@@ -155,23 +152,6 @@ class SoletraSolver:
         filtered2 = [self.__StripAccents(word) for word in combFiltered]
         tryLst = sorted(set(filtered2))
         return tryLst
-
-
-    # Type the list of words
-    def TypeWords(self, wordsList) -> None:
-        for word in wordsList:
-            for chr in word:
-                # press key and release after 10ms
-                self.__keyboardController.press(chr)
-                time.sleep(0.01)
-                self.__keyboardController.release(chr)
-                # wait 150ms to press next key
-                time.sleep(0.15)
-            # In the end of the word, press ENTER key and wait 500ms to the next word
-            self.__keyboardController.press(Key.enter)
-            time.sleep(0.01)
-            self.__keyboardController.release(Key.enter)
-            time.sleep(1)
     
 
 

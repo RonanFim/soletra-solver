@@ -1,6 +1,8 @@
 from tkinter import *
 from tkinter import filedialog as fd
+import time
 from SoletraSolver import SoletraSolver
+from KeyboardController import KeyboardController
 
 # ============== Constants ======================
 WIDTH = 625
@@ -171,16 +173,27 @@ class SoletraSolverGUI:
         self.__solver = SoletraSolver(filename, path)
     
     def __FillBoxWithList(self, wordsList: list) -> None:
-        self.__tFinalWords.delete(1.0, "end-1c")
+        self.__tFinalWords.delete(1.0, END)
         for word in wordsList:
             self.__tFinalWords.insert(END, word + '\n')
+
+    def __SetStatusMsg(self, message: str, color: str) -> None:
+        self.__lMessages.configure(foreground=color, text=message)
+        self.__root.update()
+        
+    
+    # Debug print
+    def __Log(self, log):
+        if self.__DEBUG:
+            print(log)
     
 
     # =========== CallBack Functions ===========
 
     def __SelectDictButtonFunc(self):
             filetypes = (
-                ('text files', '*.txt'),
+                ('dict files', '*.dic'),
+                ('dict files', '*.aff'),
                 ('All files', '*.*')
             )
 
@@ -190,12 +203,12 @@ class SoletraSolverGUI:
                 filetypes=filetypes
             )
             print(filepath)
-            self.__tDictFile.delete(1.0, "end-1c")
+            self.__tDictFile.delete(1.0, END)
             self.__tDictFile.insert(INSERT, filepath)
             
 
     def __StartButtonFunc(self):
-        path = self.__tDictFile.get(1.0, "end-1c")
+        path = self.__tDictFile.get(1.0, END)
         print(path)
         self.__CreateSolverFromPath(path)
         if self.__solver == None:
@@ -205,10 +218,10 @@ class SoletraSolverGUI:
         if option not in [SINGLE, MULTI]:
             print("Algoritmo não selecionado!")
             return
-        centralLet = self.__tCentral.get(1.0, "end-1c")
-        auxLet = self.__tAux.get(1.0, "end-1c")
+        centralLet = self.__tCentral.get(1.0, END)
+        auxLet = self.__tAux.get(1.0, END)
         try:
-            numChars = int(self.__tNumChars.get(1.0, "end-1c"))
+            numChars = int(self.__tNumChars.get(1.0, END))
             print(numChars)
         except ValueError:
             print("Número de Caracteres incorreto!")
@@ -216,18 +229,27 @@ class SoletraSolverGUI:
         if numChars < 3:
             print("Número de Caracteres menor que 3")
             return
+        self.__SetStatusMsg("Status: Encontrando palavras...", "Yellow")
         self.__solver.SetCentralLetters(centralLet)
         self.__solver.SetSideLetters(auxLet)
+        wordsFound = []
         if option == SINGLE:
             wordsFound = self.__solver.FindCombinations(numChars)
-            print(wordsFound)
-            self.__FillBoxWithList(wordsFound)
+        elif option == MULTI:
+            wordsFound = self.__solver.FindCombinationsMP(numChars)
+        self.__FillBoxWithList(wordsFound)
+        self.__SetStatusMsg("Status: Finalizado!", "Green")
 
     def __StopButtonFunc(self):
         pass
 
     def __TypeButtonFunc(self):
-        pass
+        self.__SetStatusMsg("Status: Digitando palavras...", "Yellow")
+        typer = KeyboardController()
+        words = self.__tFinalWords.get(1.0, END)
+        wordsList = list(filter(None, words.split('\n')))
+        typer.TypeWords(wordsList)
+        self.__SetStatusMsg("Status: Finalizado!", "Green")
 
 
     # ============ Public Methods ==============
