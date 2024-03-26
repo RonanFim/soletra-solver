@@ -1,5 +1,6 @@
 from pynput.keyboard import Key, Controller
 import time
+from threading import Lock
 
 class KeyboardController:
 
@@ -9,10 +10,23 @@ class KeyboardController:
     # ============ Constructor ================
     def __init__(self) -> None:
         self.__keyboardController = Controller()
+        self.__stopTypingLock = Lock()
+        self.__stopTypingSignal = False
     
+    def WriteStopSignal(self, value: bool) -> None:
+        self.__stopTypingLock.acquire()
+        self.__stopTypingSignal = value
+        self.__stopTypingLock.release()
+    
+    def ReadStopSignal(self) -> bool:
+        self.__stopTypingLock.acquire()
+        value = self.__stopTypingSignal
+        self.__stopTypingLock.release()
+        return value
+
     # Type the list of words
     def TypeWords(self, wordsList: list) -> None:
-        time.sleep(5)
+        self.WriteStopSignal(False)
         for word in wordsList:
             for chr in word:
                 # press key and release after 10ms
@@ -26,3 +40,5 @@ class KeyboardController:
             time.sleep(0.01)
             self.__keyboardController.release(Key.enter)
             time.sleep(1)
+            if self.ReadStopSignal():
+                return

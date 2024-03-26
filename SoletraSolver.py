@@ -21,6 +21,7 @@ class SoletraSolver:
         self.__dictName = dictName
         self.__dictPath = dictPath
         self.__DEBUG = debug
+        self.__termSignalLock = mp.Lock()
 
 
 
@@ -44,6 +45,18 @@ class SoletraSolver:
     # Return side letters list
     def GetSideLetters(self) -> list:
         return self.__sideLetters
+    
+
+    def WriteTerminateSignal(self, value: bool) -> None:
+        self.__termSignalLock.acquire()
+        self.__terminateSignal = value
+        self.__termSignalLock.release()
+    
+    def ReadTerminateSignal(self) -> bool:
+        self.__termSignalLock.acquire()
+        value = self.__terminateSignal
+        self.__termSignalLock.release()
+        return value
 
  
     def FindCombinations(self, numChars) -> list:
@@ -134,11 +147,19 @@ class SoletraSolver:
         for proc in processes:
             self.__Log("inicia processo...")
             proc.start()
+        self.WriteTerminateSignal(False)
         try:
-            for proc in processes:
-                proc.join()
-                proc.close()
-                self.__Log("...encerrou processo")
+            while not self.ReadTerminateSignal():
+                for proc in processes:
+                    if not proc.is_alive():
+                        proc.close()
+                        self.__Log("...encerrou processo")
+                        processes.remove(proc)
+                if len(processes) <= 0:
+                    break
+                time.sleep(0.5)
+            if len(processes) > 0:
+                raise KeyboardInterrupt
         except KeyboardInterrupt:
             for proc in processes:
                 proc.kill()

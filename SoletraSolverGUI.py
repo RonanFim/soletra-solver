@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import filedialog as fd
+import threading
 import time
 from SoletraSolver import SoletraSolver
 from KeyboardController import KeyboardController
@@ -8,6 +9,7 @@ from KeyboardController import KeyboardController
 WIDTH = 625
 HEIGHT = 300
 TITLE = "Soletra Solver"
+ICON = "IconeSoletra.ico"
 BGCOLOR = "#79b7c7"
 SINGLE = 1
 MULTI = 2
@@ -19,6 +21,9 @@ class SoletraSolverGUI:
     __DEBUG = False
     __root = None
     __solver = None
+    __typer = None
+    __typeThread = None
+    __startThread = None
 
 
     # ============== Constructor ==============
@@ -28,8 +33,12 @@ class SoletraSolverGUI:
         self.__root.minsize(WIDTH, HEIGHT)
         self.__root.maxsize(WIDTH, HEIGHT)
         self.__root.title(TITLE)
+        self.__root.iconbitmap(ICON)
         self.__DEBUG = debug
         self.__solver = None
+        self.__typer = None
+        self.__typeThread = None
+        self.__startThread = None
         self.__CreateElements()
         self.__ConfigGrids()
         self.__Customize()
@@ -51,7 +60,7 @@ class SoletraSolverGUI:
         self.__lNumChars   = Label(self.__fTopRight, text="Núm. de Caracteres:")
         self.__lAlgorithm  = Label(self.__fSelAlgor, text="Selecione o Algoritmo:")
         self.__lDictPath   = Label(self.__fDictPath, text="Path do arquivo de dicionário:")
-        self.__lMessages   = Label(self.__root, text="Status: ")
+        self.__lMessages   = Label(self.__root, text="")
     
     def __CreateTexts(self) -> None:
         self.__tCentral    = Text(self.__fTopRight, height= 1, width= 25)
@@ -62,9 +71,9 @@ class SoletraSolverGUI:
     
     def __CreateButtons(self) -> None:
         self.__bDictFile = Button(self.__fDictPath, text= "Selecionar Arquivo...", command=self.__SelectDictButtonFunc)
-        self.__bGenerate = Button(self.__fButtons, text= "Iniciar", command=self.__StartButtonFunc)
+        self.__bGenerate = Button(self.__fButtons, text= "Iniciar", command=self.__StartButtonThread)
         self.__bStop     = Button(self.__fButtons, text= "Parar", command=self.__StopButtonFunc)
-        self.__bType     = Button(self.__fButtons, text= "Digitar Palavras", command=self.__TypeButtonFunc)
+        self.__bType     = Button(self.__fButtons, text= "Digitar Palavras", command=self.__TypeButtonThread)
 
     def __CreateRadioButtons(self) -> None:
         self.__rbOption = IntVar()
@@ -157,7 +166,6 @@ class SoletraSolverGUI:
     def __Customize(self) -> None:
         # Change bg color of all elements
         self.__ChangeBackgroundColor(BGCOLOR, self.__root)
-        # bGenerate.configure(bg="green")
         # Change fonts
         self.__ChangeFont(self.__root)
         self.__bDictFile.configure(font=("Verdana", 9))
@@ -183,6 +191,17 @@ class SoletraSolverGUI:
     def __Log(self, log):
         if self.__DEBUG:
             print(log)
+
+
+    # Create a new thred for start button func
+    def __StartButtonThread(self):
+        self.__startThread = threading.Thread(target=self.__StartButtonFunc, daemon=True)
+        self.__startThread.start()
+        
+    # Create a new thred for type button func
+    def __TypeButtonThread(self):
+        self.__typeThread = threading.Thread(target=self.__TypeButtonFunc, daemon=True)
+        self.__typeThread.start()
     
 
     # =========== CallBack Functions ===========
@@ -252,14 +271,28 @@ class SoletraSolverGUI:
         self.__SetStatusMsg("Status: Finalizado!", "Green")
 
     def __StopButtonFunc(self):
-        pass
+        if self.__startThread != None:
+            if self.__startThread.is_alive():
+                self.__solver.WriteTerminateSignal(True)
+        if self.__typeThread != None:
+            if self.__typeThread.is_alive():
+                self.__typer.WriteStopSignal(True)
 
     def __TypeButtonFunc(self):
-        self.__SetStatusMsg("Status: Digitando palavras...", "Yellow")
-        typer = KeyboardController()
+
+        if self.__startThread.is_alive():
+            self.__SetStatusMsg("Status: Aguarde finalizar a busca ou clique em Stop!", "Red")
+            time.sleep(3)
+            self.__SetStatusMsg("Status: Encontrando palavras...", "Yellow")
+            return
+        
+        self.__SetStatusMsg("Status: Preparando para iniciar a digitação...", "Yellow")
+        self.__typer = KeyboardController()
         words = self.__tFinalWords.get(1.0, END)
         wordsList = list(filter(None, words.split('\n')))
-        typer.TypeWords(wordsList)
+        time.sleep(5)
+        self.__SetStatusMsg("Status: Digitando palavras...", "Yellow")
+        self.__typer.TypeWords(wordsList)
         self.__SetStatusMsg("Status: Finalizado!", "Green")
 
 
